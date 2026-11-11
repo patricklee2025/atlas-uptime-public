@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.env*
+runtime/
+private-reports/
+state-work/
+*.key
+*.pem
+*.log
+*.zip
+state.enc

@@ -1,0 +1,15 @@
+{
+  "timeout_seconds": 20,
+  "attempts": 3,
+  "retry_seconds": 10,
+  "slow_seconds": 8,
+  "reminder_seconds": 0,
+  "history_days": 1,
+  "stale_seconds": 900,
+  "sites": [
+    {"id": "atlas", "name": "Atlas Production", "url": "https://myatlasapp.com/", "expected_text": [], "allowed_hosts": ["myatlasapp.com", "www.myatlasapp.com"]},
+    {"id": "ams-customer", "name": "AMS Customer Payments", "url": "https://www.amsonlinesms.com/AMSCustomer/", "expected_text": ["Account Number"], "allowed_hosts": ["www.amsonlinesms.com"]},
+    {"id": "ncm-epay", "name": "NCM ePay", "url": "https://www.amsonlinesms.com/NCMepay/", "expected_text": [], "allowed_hosts": ["www.amsonlinesms.com"]},
+    {"id": "marketing", "name": "Atlas Marketing Studio", "url": "https://atlasmarketingstudio.app/", "expected_text": ["ATLAS Marketing Studio"], "allowed_hosts": ["atlasmarketingstudio.app", "www.atlasmarketingstudio.app"]}
+  ]
+}
