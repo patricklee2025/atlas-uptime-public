@@ -115,6 +115,20 @@ class PublicRunnerTests(unittest.TestCase):
             self.assertEqual(runner.main(), 2)
         self.assertNotIn("PRIVATE SECRET", output.getvalue())
 
+    def test_delivery_diagnostics_only_print_allowlisted_labels(self):
+        report = {"channels": {
+            "email": {"status": "DELIVERY FAILED", "detail": "SMTP authentication rejected; check approved SMTP credentials"},
+            "pushover": {"status": "ACCEPTED", "detail": "PRIVATE SECRET"},
+            "chat": {"status": "PRIVATE SECRET", "detail": "PRIVATE SECRET"},
+            "PRIVATE SECRET": {"status": "ACCEPTED"},
+        }, "recipient": "PRIVATE SECRET"}
+        Path(self.temp.name, "alert-test.json").write_text(json.dumps(report))
+        with contextlib.redirect_stdout(io.StringIO()) as output:
+            runner.test_diagnostics(self.temp.name)
+        self.assertIn("email: failed. SMTP authentication rejected", output.getvalue())
+        self.assertIn("pushover: provider accepted", output.getvalue())
+        self.assertNotIn("PRIVATE SECRET", output.getvalue())
+
     def test_no_repeated_down_alert_with_default_configuration(self):
         data = state()
         monitor.transition(data, SITE, observation(False, 1000), CFG, ["email"])
