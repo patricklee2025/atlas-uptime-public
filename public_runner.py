@@ -61,6 +61,36 @@ def readiness():
         raise ValueError("Selected alert channels are not ready")
 
 
+def test_diagnostics(folder):
+    """Expose only fixed delivery-test labels, never report content or secrets."""
+    path = Path(folder, "alert-test.json")
+    if not path.exists():
+        print("Alert test: no delivery report available.")
+        return
+    report = json.loads(path.read_text(encoding="utf-8"))
+    reasons = {
+        "SMTP authentication rejected; check approved SMTP credentials": "SMTP authentication rejected",
+        "SMTP rejected recipients; check EMAIL_TO and relay permissions": "SMTP recipients rejected",
+        "Network/TLS request failed or timed out": "Network or TLS failure",
+        "HTTP 400; verify alert credentials, provider quota, and service availability": "Provider rejected request (HTTP 400)",
+        "HTTP 401; verify alert credentials, provider quota, and service availability": "Provider rejected credentials (HTTP 401)",
+        "HTTP 403; verify alert credentials, provider quota, and service availability": "Provider denied request (HTTP 403)",
+        "HTTP 429; verify alert credentials, provider quota, and service availability": "Provider rate limit (HTTP 429)",
+    }
+    for channel in ("email", "pushover", "chat"):
+        entry = report.get("channels", {}).get(channel)
+        if not isinstance(entry, dict):
+            continue
+        status = entry.get("status")
+        if status == "ACCEPTED":
+            print(f"Alert test {channel}: provider accepted.")
+        elif status == "NOT CONFIGURED":
+            print(f"Alert test {channel}: not selected.")
+        else:
+            reason = reasons.get(entry.get("detail"), "Check channel configuration privately")
+            print(f"Alert test {channel}: failed. {reason}.")
+
+
 def run(mode, state_path):
     fernet = cipher()  # Fail before probes or delivery when encryption is unavailable.
     if mode == "initialize":
@@ -86,6 +116,7 @@ def run(mode, state_path):
         result = subprocess.run(command, env=env, stdout=subprocess.DEVNULL,
                                 stderr=subprocess.DEVNULL, timeout=480)
         if mode == "test":
+            test_diagnostics(folder)
             return 0 if result.returncode == 0 else 2
         if result.returncode not in (0, 1, 2):
             raise ValueError("Unexpected monitor exit")
