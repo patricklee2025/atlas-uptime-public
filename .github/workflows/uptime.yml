@@ -1,0 +1,66 @@
+name: Private uptime checks
+
+on:
+  schedule:
+    - cron: '2-57/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Initialize once, test delivery, or check sites'
+        type: choice
+        options: [check, initialize, test]
+        default: check
+
+permissions:
+  contents: read
+
+concurrency:
+  group: encrypted-monitor-state
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || vars.UPTIME_ENABLED == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install pinned encryption dependencies
+        run: |
+          python3 -m venv .venv
+          .venv/bin/python -m pip install --disable-pip-version-check --only-binary=:all: -r requirements.txt
+      - name: Load encrypted state
+        env:
+          MODE: ${{ inputs.mode || 'check' }}
+        run: bash state_store.sh load
+      - name: Run privately
+        id: operation
+        env:
+          MODE: ${{ inputs.mode || 'check' }}
+          STATE_ENCRYPTION_KEY: ${{ secrets.STATE_ENCRYPTION_KEY }}
+          ALERT_CHANNELS: ${{ vars.ALERT_CHANNELS || 'email' }}
+          SMTP_HOST: smtp.gmail.com
+          SMTP_PORT: '587'
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          PUSHOVER_APP_TOKEN: ${{ secrets.PUSHOVER_APP_TOKEN }}
+          PUSHOVER_USER_KEY: ${{ secrets.PUSHOVER_USER_KEY }}
+        shell: bash
+        run: |
+          set +e
+          .venv/bin/python public_runner.py "$MODE"
+          result=$?
+          set -e
+          echo "result=$result" >> "$GITHUB_OUTPUT"
+      - name: Save ciphertext only
+        if: steps.operation.outputs.result != '' && inputs.mode != 'test'
+        run: bash state_store.sh save
+      - name: Report monitor execution
+        if: always() && steps.operation.outputs.result != ''
+        env:
+          RESULT: ${{ steps.operation.outputs.result }}
+        run: exit "$RESULT"
