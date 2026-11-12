@@ -77,6 +77,10 @@ def test_diagnostics(folder):
         "HTTP 403; verify alert credentials, provider quota, and service availability": "Provider denied request (HTTP 403)",
         "HTTP 429; verify alert credentials, provider quota, and service availability": "Provider rate limit (HTTP 429)",
     }
+    for kind in ("ValueError", "UnicodeEncodeError", "SMTPDataError", "SMTPSenderRefused",
+                 "SMTPConnectError", "SMTPServerDisconnected", "SMTPNotSupportedError",
+                 "SMTPException", "OSError", "ConnectionRefusedError", "RuntimeError"):
+        reasons[kind + "; check channel configuration and provider availability"] = kind
     for channel in ("email", "pushover", "chat"):
         entry = report.get("channels", {}).get(channel)
         if not isinstance(entry, dict):
