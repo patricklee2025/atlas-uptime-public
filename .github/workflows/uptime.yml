@@ -42,7 +42,7 @@ jobs:
           STATE_ENCRYPTION_KEY: ${{ secrets.STATE_ENCRYPTION_KEY }}
           ALERT_CHANNELS: ${{ vars.ALERT_CHANNELS || 'email' }}
           SMTP_HOST: smtp.gmail.com
-          SMTP_PORT: '587'
+          SMTP_PORT: '465'
           SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
